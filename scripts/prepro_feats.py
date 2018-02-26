@@ -40,6 +40,7 @@ import torch
 import torchvision.models as models
 from torch.autograd import Variable
 import skimage.io
+import skimage.transform
 
 from torchvision import transforms as trn
 preprocess = trn.Compose([
@@ -49,6 +50,8 @@ preprocess = trn.Compose([
 
 from misc.resnet_utils import myResnet
 import misc.resnet as resnet
+
+MAX_SIZE = 1024
 
 def main(params):
   net = getattr(resnet, params['model'])()
@@ -77,6 +80,17 @@ def main(params):
     if len(I.shape) == 2:
       I = I[:,:,np.newaxis]
       I = np.concatenate((I,I,I), axis=2)
+
+    if I.shape[0] > MAX_SIZE or I.shape[1] > MAX_SIZE:
+      print('I shape', I.shape, img['filename'], 'resize to %d' % MAX_SIZE)
+      if I.shape[0] > I.shape[1]:
+        w = MAX_SIZE
+        h = int(I.shape[1] * MAX_SIZE/I.shape[0])
+      else:
+        h = MAX_SIZE
+        w = int(I.shape[0] * MAX_SIZE/I.shape[1])
+      I = skimage.transform.resize(I,(w,h))
+      print('after resize I.shape', I.shape)
 
     I = I.astype('float32')/255.0
     I = torch.from_numpy(I.transpose([2,0,1])).cuda()
