@@ -65,12 +65,16 @@ def assign_splits(imgs, params):
         img['split'] = 'train'
 
 def main(params):
-
   imgs = {filename[filename.rfind('/')+1:filename.rfind('.')].replace('annotations', 'images'):json.load(open(filename, 'r')) for filename in params['input_json']}
+  root_path = os.path.dirname(params['input_json'][0])
   tmp = []
   for k in imgs.keys():
     for img in imgs[k]:
       img['filename'] = k+'/'+img['image_id']
+      file_path = os.path.isfile(os.path.join(root_path, img['filename']))
+      if not file_path:
+        print('file not exists', file_path)
+        continue
       tmp.append(img)
   imgs = tmp
   seed(123) # make reproducible
