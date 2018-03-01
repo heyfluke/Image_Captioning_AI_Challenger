@@ -94,7 +94,7 @@ with open(opt.infos_path) as f:
 if len(opt.input_fc_dir) == 0:
     opt.input_fc_dir = infos['opt'].input_fc_dir
     opt.input_att_dir = infos['opt'].input_att_dir
-    opt.input_att_dir = infos['opt'].input_box_dir
+    opt.input_box_dir = infos['opt'].input_box_dir
     opt.input_label_h5 = infos['opt'].input_label_h5
 if len(opt.input_json) == 0:
     opt.input_json = infos['opt'].input_json
@@ -103,6 +103,7 @@ if opt.batch_size == 0:
 if len(opt.id) == 0:
     opt.id = infos['opt'].id
 ignore = ["id", "batch_size", "beam_size", "start_from", "language_eval"]
+
 for k in vars(infos['opt']).keys():
     if k not in ignore:
         if k in vars(opt):

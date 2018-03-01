@@ -134,6 +134,7 @@ class DataLoader(data.Dataset):
             tmp_fc, tmp_att,\
                 ix, tmp_wrapped = self._prefetch_process[split].get()
             fc_batch.append(tmp_fc)
+            tmp_att = tmp_att.reshape(7*7, 2048)  # FIXME: not hardcode.
             att_batch.append(tmp_att)
             
             label_batch[i * seq_per_img : (i + 1) * seq_per_img, 1 : self.seq_length + 1] = self.get_captions(ix, seq_per_img)

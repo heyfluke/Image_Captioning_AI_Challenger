@@ -138,6 +138,7 @@ def eval_split(model, crit, loader, eval_kwargs={}):
 
     lang_stats = None
     if lang_eval == 1:
+        print('predictions size', len(predictions), ',[0]', predictions[0])
         lang_stats = language_eval(dataset, predictions, eval_kwargs['id'], split)
 
     # Switch back to training mode
