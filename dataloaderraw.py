@@ -48,9 +48,9 @@ class DataLoaderRaw():
         self.files = []
         self.ids = []
 
-        print(len(self.coco_json))
+        print('coco_json len', len(self.coco_json))
         if len(self.coco_json) > 0:
-            print('reading from ' + opt.coco_json)
+            print('reading from coco_json ' + opt.coco_json)
             # read in filenames from the coco-style json file
             self.coco_annotation = json.load(open(self.coco_json))
             for k,v in enumerate(self.coco_annotation['images']):
@@ -82,12 +82,13 @@ class DataLoaderRaw():
 
         self.iterator = 0
 
+
     def get_batch(self, split, batch_size=None):
         batch_size = batch_size or self.batch_size
 
         # pick an index of the datapoint to load next
         fc_batch = np.ndarray((batch_size, 2048), dtype = 'float32')
-        att_batch = np.ndarray((batch_size, 14, 14, 2048), dtype = 'float32')
+        att_batch = np.ndarray((batch_size, 7 *7, 2048), dtype = 'float32')
         max_index = self.N
         wrapped = False
         infos = []
@@ -110,10 +111,12 @@ class DataLoaderRaw():
             img = img.astype('float32')/255.0
             img = torch.from_numpy(img.transpose([2,0,1])).cuda()
             img = Variable(preprocess(img), volatile=True)
-            tmp_fc, tmp_att = self.my_resnet(img)
+            tmp_fc, tmp_att = self.my_resnet(img, 7)  # FIXME: hardcode
 
             fc_batch[i] = tmp_fc.data.cpu().float().numpy()
-            att_batch[i] = tmp_att.data.cpu().float().numpy()
+            tmp_att_data = tmp_att.data.cpu().float().numpy()
+            # print('tmp_att_data shape', tmp_att_data.shape)
+            att_batch[i] = tmp_att_data.reshape(7*7, 2048)
 
             info_struct = {}
             info_struct['id'] = self.ids[ri]
@@ -123,6 +126,10 @@ class DataLoaderRaw():
         data = {}
         data['fc_feats'] = fc_batch
         data['att_feats'] = att_batch
+
+        data['att_masks'] = np.zeros(data['att_feats'].shape[:2], dtype='float32')
+        for i in range(len(att_batch)):
+            data['att_masks'][i*self.seq_per_img:(i+1)*self.seq_per_img, :att_batch[i].shape[0]] = 1
         data['bounds'] = {'it_pos_now': self.iterator, 'it_max': self.N, 'wrapped': wrapped}
         data['infos'] = infos
 
@@ -136,4 +143,3 @@ class DataLoaderRaw():
 
     def get_vocab(self):
         return self.ix_to_word
-        

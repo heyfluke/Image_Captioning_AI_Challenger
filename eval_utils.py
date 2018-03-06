@@ -144,3 +144,61 @@ def eval_split(model, crit, loader, eval_kwargs={}):
     # Switch back to training mode
     model.train()
     return loss_sum/loss_evals, predictions, lang_stats
+
+
+def predict_split(model, crit, loader, eval_kwargs={}):
+    print('loader.batch_size', loader.batch_size)
+    verbose = eval_kwargs.get('verbose', True)
+    split = eval_kwargs.get('split', 'val')
+
+    # Make sure in the evaluation mode
+    model.eval()
+
+    loader.reset_iterator(split)
+
+    n = 0
+    predictions = []
+    while True:
+        data = loader.get_batch(split)
+        # print('batch data type and size', type(data), len(data))
+        # print('data', data)
+        n = n + loader.batch_size
+
+        # forward the model to also get generated samples for each image
+        # Only leave one feature for each image, in case duplicate sample
+        tmp = [data['fc_feats'][np.arange(loader.batch_size) * loader.seq_per_img], 
+            data['att_feats'][np.arange(loader.batch_size) * loader.seq_per_img],
+            data['att_masks'][np.arange(loader.batch_size) * loader.seq_per_img]]
+        tmp = [Variable(torch.from_numpy(_), volatile=True).cuda() for _ in tmp]
+        fc_feats, att_feats, att_masks = tmp
+        # forward the model to also get generated samples for each image
+        seq = model(fc_feats, att_feats, att_masks, opt=eval_kwargs, mode='sample')[0].data
+        
+        sents = utils.decode_sequence(loader.get_vocab(), seq)
+
+        for k, sent in enumerate(sents):
+            if verbose:
+                print('image %s: ' %(data['infos'][k]['id']), sent.encode('utf8', 'replace'))
+            entry = {'image_id': data['infos'][k]['id'], 
+                'caption': sent,
+                'file_path': data['infos'][k]['file_path']}
+            if eval_kwargs.get('dump_path', 0) == 1:
+                entry['file_name'] = data['infos'][k]['file_path']
+            predictions.append(entry)
+
+        # if we wrapped around the split or used up val imgs budget then bail
+        ix0 = data['bounds']['it_pos_now']
+        ix1 = data['bounds']['it_max']
+        for i in range(n - ix1):
+            predictions.pop()
+
+        if data['bounds']['wrapped']:
+            break
+
+    # print('predictions', predictions)
+
+    # Switch back to training mode
+    model.train()
+    return predictions
+
+
