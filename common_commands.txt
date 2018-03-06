@@ -1,0 +1,24 @@
+time python scripts/prepro_split_tokenize.py --input_json /mnt/data1/datasets/caption/ai_challenger_caption/caption_train_annotations_20170902.json /mnt/data1/datasets/caption/ai_challenger_caption/caption_validation_annotations_20170910.json --output_json ./data/data_chinese.json --num_val 10000 --num_test 10000 
+
+
+time python scripts/prepro_labels.py --input_json data/data_chinese.json --output_json data/chinese_talk.json --output_h5 data/chinese_talk --max_length 20 --word_count_threshold 20 --images_root /mnt/data1/datasets/caption/ai_challenger_caption/
+
+
+time python scripts/prepro_reference_json.py --input_json /mnt/data1/datasets/caption/ai_challenger_caption/caption_train_annotations_20170902.json /mnt/data1/datasets/caption/ai_challenger_caption/caption_validation_annotations_20170910.json --output_json ./data/eval_reference_new.json
+
+
+time python scripts/prepro_ngrams.py --input_json data/data_chinese.json --dict_json data/chinese_talk.json --output_pkl data/chinese-train --split train
+
+
+time python prepro_feats.py --input_json data/data_chinese.json --output_dir data/chinese_talk --images_root data/ai_challenger --att_size 7 --images_root /mnt/data1/datasets/caption/ai_challenger_caption
+
+time python eval.py --dump_images 0 --num_images -1 --split test  --model log_dense_box_bn/model-best.pth --language_eval 1 --beam_size 5 --temperature 1.0 --sample_max 1  --infos_path log_dense_box_bn/infos_dense_box_bn-best.pkl --input_att_dir data/chinese_talk_att
+
+
+# predict
+time python predict.py \
+    --model log_dense_box_bn/model-best.pth \
+    --infos_path log_dense_box_bn/infos_dense_box_bn-best.pkl \
+    --image_folder predict_folder/ 
+
+

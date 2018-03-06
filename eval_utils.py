@@ -146,20 +146,19 @@ def eval_split(model, crit, loader, eval_kwargs={}):
     return loss_sum/loss_evals, predictions, lang_stats
 
 
-def predict_split(model, crit, loader, eval_kwargs={}):
+def predict(model, crit, loader, eval_kwargs={}):
     print('loader.batch_size', loader.batch_size)
     verbose = eval_kwargs.get('verbose', True)
-    split = eval_kwargs.get('split', 'val')
 
     # Make sure in the evaluation mode
     model.eval()
 
-    loader.reset_iterator(split)
+    loader.reset_iterator('dummy')
 
     n = 0
     predictions = []
     while True:
-        data = loader.get_batch(split)
+        data = loader.get_batch('dummy')
         # print('batch data type and size', type(data), len(data))
         # print('data', data)
         n = n + loader.batch_size
