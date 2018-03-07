@@ -37,19 +37,28 @@ class Predictor:
         # Setup the model
         print("self.opt", self.opt)
         model = models.setup(self.opt)
-        model.load_state_dict(torch.load(self.opt.model))
-        model.cuda()
+        if self.opt.use_cpu:
+            state_dict = torch.load(self.opt.model, map_location={'cuda:0':'cpu'})
+            print('state_dict keys', state_dict.keys())
+            model.load_state_dict(state_dict)
+        else:
+            model.load_state_dict(torch.load(self.opt.model))
+        if not self.opt.use_cpu:
+            model.cuda()
         model.eval()
         crit = utils.LanguageModelCriterion()
 
         # Create the Data Loader instance
         loader = DataLoaderRaw({'folder_path': image_folder, 
                                     'batch_size': 1,
-                                    'cnn_model': self.opt.cnn_model})
+                                    'cnn_model': self.opt.cnn_model,
+                                    'use_cpu': self.opt.use_cpu,
+                                    })
         # When eval using provided pretrained model, the vocab may be different from what you have in your cocotalk.json
         # So make sure to use the vocab in infos file.
         loader.ix_to_word = self.infos['vocab']
 
+        print('vars opt', vars(self.opt))
         # Set sample options
         predictions = eval_utils.predict(model, crit, loader, vars(self.opt))
         print('len(predictions)', len(predictions))
@@ -72,6 +81,8 @@ def main():
                     help='resnet101, resnet152')
     parser.add_argument('--infos_path', type=str, default='',
                     help='path to infos to evaluate')
+    parser.add_argument('--use_cpu', type=bool, default=False,
+                    help='use cpu not not.')
 
     # Sampling options
     # For evaluation on a folder of images:

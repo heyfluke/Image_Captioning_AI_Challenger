@@ -149,6 +149,7 @@ def eval_split(model, crit, loader, eval_kwargs={}):
 def predict(model, crit, loader, eval_kwargs={}):
     print('loader.batch_size', loader.batch_size)
     verbose = eval_kwargs.get('verbose', True)
+    use_cpu = eval_kwargs.get('use_cpu', False)
 
     # Make sure in the evaluation mode
     model.eval()
@@ -168,7 +169,9 @@ def predict(model, crit, loader, eval_kwargs={}):
         tmp = [data['fc_feats'][np.arange(loader.batch_size) * loader.seq_per_img], 
             data['att_feats'][np.arange(loader.batch_size) * loader.seq_per_img],
             data['att_masks'][np.arange(loader.batch_size) * loader.seq_per_img]]
-        tmp = [Variable(torch.from_numpy(_), volatile=True).cuda() for _ in tmp]
+        tmp = [Variable(torch.from_numpy(_), volatile=True) for _ in tmp]
+        if not use_cpu:
+            tmp = [_.cuda() for _ in tmp]
         fc_feats, att_feats, att_masks = tmp
         # forward the model to also get generated samples for each image
         seq = model(fc_feats, att_feats, att_masks, opt=eval_kwargs, mode='sample')[0].data
